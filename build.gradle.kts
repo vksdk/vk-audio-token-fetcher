@@ -11,7 +11,7 @@ kotlin.sourceSets {
 }
 
 group = "com.petersamokhin.vksdk.audiotokenfetcher"
-version = "0.0.1-SNAPSHOT"
+version = "1.0.0"
 
 repositories {
     mavenCentral()
@@ -26,3 +26,5 @@ dependencies {
 
     implementation("io.ktor", "ktor-client-core-jvm", Config.Versions.ktor)
 }
+
+apply(from = "gradle/mavenpublish.gradle.kts")
