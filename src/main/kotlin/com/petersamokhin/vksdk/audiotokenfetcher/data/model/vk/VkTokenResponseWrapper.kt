@@ -4,8 +4,8 @@ import com.petersamokhin.vksdk.audiotokenfetcher.data.error.VkInvalidTokenRespon
 import kotlinx.serialization.Serializable
 
 @Serializable
-internal data class VkRefreshedAccessTokenResponse(
-    val response: TokenWrapper? = null
+data class VkTokenResponseWrapper(
+    val response: VkTokenWrapper? = null
 ) {
     fun isValid() = !response?.token.isNullOrEmpty()
 

@@ -3,6 +3,6 @@ package com.petersamokhin.vksdk.audiotokenfetcher.data.model.vk
 import kotlinx.serialization.Serializable
 
 @Serializable
-internal data class TokenWrapper(
+data class VkTokenWrapper(
     val token: String? = null
 )

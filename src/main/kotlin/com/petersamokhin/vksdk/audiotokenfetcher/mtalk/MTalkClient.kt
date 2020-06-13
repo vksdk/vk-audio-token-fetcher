@@ -1,7 +1,6 @@
 package com.petersamokhin.vksdk.audiotokenfetcher.mtalk
 
 import com.petersamokhin.vksdk.audiotokenfetcher.data.error.MtalkCheckInException
-import com.petersamokhin.vksdk.audiotokenfetcher.data.model.gcm.CheckInResponse
 import com.petersamokhin.vksdk.audiotokenfetcher.utils.toHexString
 import java.net.Socket
 import javax.net.ssl.SSLContext
@@ -11,7 +10,7 @@ internal class MTalkClient {
         SSLContext.getDefault().socketFactory
     }
 
-    fun checkInWith(authData: CheckInResponse) {
+    fun checkInWith(androidId: Long, securityToken: Long) {
         val sslSocket = sslSocketFactory.createSocket(
             Socket(SERVICE_HOST, SERVICE_PORT),
             SERVICE_HOST,
@@ -23,7 +22,7 @@ internal class MTalkClient {
         val inputStream = sslSocket.getInputStream()
 
         outputStream.also {
-            it.write(buildRequestBodyArray(authData))
+            it.write(buildRequestBodyArray(androidId, securityToken))
         }
 
         inputStream.use {
@@ -43,10 +42,10 @@ internal class MTalkClient {
     }
 
     private fun buildRequestBodyArray(
-        authData: CheckInResponse
+        androidId: Long, securityToken: Long
     ): ByteArray {
-        val rawId = authData.androidId.toString().toByteArray()
-        val rawToken = authData.securityToken.toString().toByteArray()
+        val rawId = androidId.toString().toByteArray()
+        val rawToken = securityToken.toString().toByteArray()
 
         val idLen = writeVarint(rawId.size)
         val hexIdRaw = (HEX_ID_PREFIX + rawId.toHexString()).toByteArray()

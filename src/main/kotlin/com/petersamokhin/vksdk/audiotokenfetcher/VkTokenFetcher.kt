@@ -1,9 +1,10 @@
 package com.petersamokhin.vksdk.audiotokenfetcher
 
 import com.petersamokhin.vksdk.audiotokenfetcher.data.error.VkInvalidTokenResponseException
+import com.petersamokhin.vksdk.audiotokenfetcher.data.model.gcm.GcmCredentials
 import com.petersamokhin.vksdk.audiotokenfetcher.data.model.vk.VkAccessTokenData
-import com.petersamokhin.vksdk.audiotokenfetcher.data.model.vk.VkAccessTokenResponse
-import com.petersamokhin.vksdk.audiotokenfetcher.data.model.vk.VkRefreshedAccessTokenResponse
+import com.petersamokhin.vksdk.audiotokenfetcher.data.model.vk.VkTokenAndUserData
+import com.petersamokhin.vksdk.audiotokenfetcher.data.model.vk.VkTokenResponseWrapper
 import com.petersamokhin.vksdk.audiotokenfetcher.gcm.GcmAndroidCheckInClient
 import com.petersamokhin.vksdk.audiotokenfetcher.mtalk.MTalkClient
 import io.ktor.client.HttpClient
@@ -30,8 +31,14 @@ class VkTokenFetcher(
     private val httpClient: HttpClient,
     private val json: Json
 ) {
+    private val gcl = GcmAndroidCheckInClient(httpClient)
+    private val mTalkClient = MTalkClient()
+
     /**
-     * Retrieve the confirmed VK access token
+     * Retrieve the confirmed VK access token.
+     * All of the steps handled automatically.
+     *
+     * You can do the steps manually if you want to e.g. cache credentials.
      *
      * @param username VK login, usually the phone number
      * @param password VK password
@@ -44,20 +51,14 @@ class VkTokenFetcher(
         password: String,
         scopes: String
     ): VkAccessTokenData {
-        val gcl = GcmAndroidCheckInClient(httpClient)
-        val mTalkClient = MTalkClient()
+        val (androidId, securityToken) = getUnconfirmedGcmCredentials()
 
-        val authData = gcl.checkIn()
-        mTalkClient.checkInWith(authData)
+        mTalkCheckIn(androidId, securityToken)
 
-        val badToken = getNonRefreshedToken(username, password, scopes)
+        val badToken = getUnconfirmedToken(username, password, scopes)
 
-        gcl.getReceipt(authData, null)
-
-        val finalResponse = gcl.getReceipt(authData, badToken.requireUserId())
-
-        val receipt = String(finalResponse).split(RECEIPT_DELIMITER)[1]
-        val refreshedToken = refreshToken(badToken.requireAccessToken(), receipt)
+        val receipt = getReceiptForUser(androidId, securityToken, badToken.requireUserId())
+        val refreshedToken = confirmToken(badToken.requireAccessToken(), receipt)
 
         return VkAccessTokenData(
             refreshedToken.requireToken(),
@@ -65,12 +66,42 @@ class VkTokenFetcher(
         )
     }
 
+    suspend fun getUnconfirmedGcmCredentials(): GcmCredentials {
+        val authData = gcl.checkIn()
+
+        return GcmCredentials(
+            androidId = authData.androidId,
+            securityToken = authData.securityToken
+        )
+    }
+
+    fun mTalkCheckIn(androidId: Long, securityToken: Long) {
+        mTalkClient.checkInWith(androidId, securityToken)
+    }
+
+    suspend fun getReceiptForUser(
+        androidId: Long,
+        securityToken: Long,
+        userId: Int
+    ): String {
+        // two steps required
+        gcl.getReceipt(androidId, securityToken, null)
+
+        return String(
+            gcl.getReceipt(
+                androidId = androidId,
+                securityToken = securityToken,
+                userId = userId
+            )
+        ).split(RECEIPT_DELIMITER)[1]
+    }
+
     @OptIn(ImplicitReflectionSerializer::class)
-    private suspend fun getNonRefreshedToken(
+    suspend fun getUnconfirmedToken(
         username: String,
         password: String,
         scopes: String
-    ): VkAccessTokenResponse = httpClient.get<String> {
+    ) = httpClient.get<String> {
         url(buildString {
             append(VK_API_BASE_URL_GET_TOKEN)
             append('?')
@@ -88,7 +119,7 @@ class VkTokenFetcher(
         })
         header(HttpHeaders.UserAgent, KATE_MOBILE_USER_AGENT)
     }.let {
-        json.parse<VkAccessTokenResponse>(it).also { response ->
+        json.parse<VkTokenAndUserData>(it).also { response ->
             if (!response.isValid()) {
                 throw VkInvalidTokenResponseException("access_token", it)
             }
@@ -96,7 +127,7 @@ class VkTokenFetcher(
     }
 
     @OptIn(ImplicitReflectionSerializer::class)
-    private suspend fun refreshToken(
+    suspend fun confirmToken(
         badToken: String,
         receipt: String
     ) = httpClient.get<String> {
@@ -113,7 +144,7 @@ class VkTokenFetcher(
         })
         header(HttpHeaders.UserAgent, KATE_MOBILE_USER_AGENT)
     }.let {
-        json.parse<VkRefreshedAccessTokenResponse>(it).also { response ->
+        json.parse<VkTokenResponseWrapper>(it).also { response ->
             if (!response.isValid()) {
                 throw VkInvalidTokenResponseException("refresh_token", it)
             }

@@ -25,15 +25,15 @@ internal class GcmAndroidCheckInClient(
         )
     }.decodeCheckInResponse()
 
-    suspend fun getReceipt(authData: CheckInResponse, userId: Int?): ByteArray = httpClient.post {
+    suspend fun getReceipt(androidId: Long, securityToken: Long, userId: Int?): ByteArray = httpClient.post {
         url(RECEIPT_URL)
         header(
             HttpHeaders.Authorization,
-            "AidLogin ${authData.androidId}:${authData.securityToken}"
+            "AidLogin $androidId:$securityToken"
         )
         checkInHeaders.forEach(::header)
         body = TextContent(
-            buildGetReceiptRequestBody(authData.androidId, userId),
+            buildGetReceiptRequestBody(androidId, userId),
             ContentType.Application.FormUrlEncoded
         )
     }
