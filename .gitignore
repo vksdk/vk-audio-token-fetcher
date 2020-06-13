@@ -1,0 +1,9 @@
+# ItelliJ, Gradle
+build
+.gradle
+.idea
+*.iml
+local.properties
+
+# MacOS
+.DS_Store
