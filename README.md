@@ -34,5 +34,5 @@ License: see the [license](https://raw.githubusercontent.com/vksdk/vk-audio-toke
 For educational use only. There is no liability for the repository authors.
 
 The main purpose of this library to be able to access the private VK audio APIs, which must not be private,
-because there is a lot of audio media content which is not licensed and volunteered by the authors,
+because there is a lot of audio media content which is not licensed but volunteered to the community by the authors,
 but VK adds own advertisement and other limitations, earns money on this, and gives nothing to the authors.
