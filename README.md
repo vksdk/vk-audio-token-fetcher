@@ -6,7 +6,7 @@ Unofficial tool for accessing private VK APIs, e.g. to access audio.
 ```kotlin
 val vkTokenFetcher = VkTokenFetcher(
     httpClient = HttpClient(OkHttp),
-    json = Json
+    json = Json { /* ... */ }
 )
 
 val login = "+79991234567"
