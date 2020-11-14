@@ -13,9 +13,8 @@ import io.ktor.client.request.header
 import io.ktor.client.request.url
 import io.ktor.http.HttpHeaders
 import io.ktor.http.formUrlEncode
-import kotlinx.serialization.ImplicitReflectionSerializer
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.parse
 
 /**
  * VK Token fetcher
@@ -96,7 +95,6 @@ class VkTokenFetcher(
         ).split(RECEIPT_DELIMITER)[1]
     }
 
-    @OptIn(ImplicitReflectionSerializer::class)
     suspend fun getUnconfirmedToken(
         username: String,
         password: String,
@@ -119,14 +117,13 @@ class VkTokenFetcher(
         })
         header(HttpHeaders.UserAgent, KATE_MOBILE_USER_AGENT)
     }.let {
-        json.parse<VkTokenAndUserData>(it).also { response ->
+        json.decodeFromString<VkTokenAndUserData>(it).also { response ->
             if (!response.isValid()) {
                 throw VkInvalidTokenResponseException("access_token", it)
             }
         }
     }
 
-    @OptIn(ImplicitReflectionSerializer::class)
     suspend fun confirmToken(
         badToken: String,
         receipt: String
@@ -144,7 +141,7 @@ class VkTokenFetcher(
         })
         header(HttpHeaders.UserAgent, KATE_MOBILE_USER_AGENT)
     }.let {
-        json.parse<VkTokenResponseWrapper>(it).also { response ->
+        json.decodeFromString<VkTokenResponseWrapper>(it).also { response ->
             if (!response.isValid()) {
                 throw VkInvalidTokenResponseException("refresh_token", it)
             }

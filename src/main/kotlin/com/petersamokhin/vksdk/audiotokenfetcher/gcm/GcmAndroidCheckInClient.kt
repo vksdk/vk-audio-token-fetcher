@@ -11,6 +11,7 @@ import io.ktor.content.TextContent
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.formUrlEncode
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.protobuf.ProtoBuf
 
 internal class GcmAndroidCheckInClient(
@@ -38,8 +39,9 @@ internal class GcmAndroidCheckInClient(
         )
     }
 
+    @OptIn(ExperimentalSerializationApi::class)
     private fun ByteArray.decodeCheckInResponse(): CheckInResponse =
-        ProtoBuf.load(CheckInResponse.serializer(), this)
+        ProtoBuf.decodeFromByteArray(CheckInResponse.serializer(), this)
 
     private fun buildGetReceiptRequestBody(
         deviceId: Long,
